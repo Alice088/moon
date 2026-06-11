@@ -1,0 +1,44 @@
+basePath: /v1
+definitions:
+  dto.HealthResponse:
+    properties:
+      status:
+        type: string
+      timestamp:
+        type: string
+      version:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: dev@example.com
+    name: Developer
+  description: A Go API project template
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: https://github.com
+  title: Go Template API
+  version: 0.1.0
+paths:
+  /health:
+    get:
+      description: Returns the service health status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.HealthResponse'
+      summary: Health check
+      tags:
+      - system
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer " followed by a JWT token
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
