@@ -10,6 +10,7 @@ import (
 )
 
 func Average(dbPath string, alertType string, since time.Time) (types.Percent, error) {
+	alertType = alertType + "_peak"
 	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		return 0, err

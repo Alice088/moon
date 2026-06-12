@@ -63,7 +63,7 @@ func main() {
 	case "update":
 		cmdUpdate()
 	case "version":
-		fmt.Println("moon", version)
+		cmdVersion()
 	default:
 		printUsage()
 		os.Exit(1)
@@ -201,6 +201,10 @@ func cmdDisable() {
 }
 
 func cmdStatus() {
+	if version != "" {
+		fmt.Printf("version: %s\n", version)
+	}
+
 	if pidRunning() {
 		data, _ := os.ReadFile(pidFile)
 		fmt.Printf("running (pid %s)\n", strings.TrimSpace(string(data)))
@@ -407,6 +411,29 @@ func cmdUninstall() {
 	}
 
 	fmt.Println("uninstall complete")
+}
+
+func cmdVersion() {
+	fmt.Printf("moon %s\n", version)
+
+	cfg, err := config.Load(effectiveCfgPath())
+	if err != nil {
+		return
+	}
+
+	repo := cfg.UpdateRepo
+	if repo == "" {
+		repo = "Alice088/moon"
+	}
+
+	release, err := fetchLatestRelease(repo)
+	if err != nil {
+		return
+	}
+
+	if release.Name != "" {
+		fmt.Printf("latest: %s\n", release.Name)
+	}
 }
 
 func pidRunning() bool {

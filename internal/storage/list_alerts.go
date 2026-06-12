@@ -11,6 +11,7 @@ import (
 )
 
 func ListAlerts(dbPath string, alertType string, since time.Time) ([]entity.Alert, error) {
+	alertType = alertType + "_peak"
 	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		return nil, err
