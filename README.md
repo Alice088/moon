@@ -26,7 +26,6 @@ Installer copies the binary to `/usr/local/bin`, creates config in `/root/.moon/
 ## Quick start
 
 ```bash
-moon enable    # install and enable systemd service
 moon start     # start the daemon
 moon stop      # stop the daemon
 moon status    # check if running
