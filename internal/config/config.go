@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 
@@ -61,5 +62,10 @@ func Load(path string) (*Config, error) {
 	if err := dec.Decode(&cfg); err != nil {
 		return nil, fmt.Errorf("decode config: %w", err)
 	}
+
+	if !filepath.IsAbs(cfg.Storage.DBPath) {
+		cfg.Storage.DBPath = filepath.Join(filepath.Dir(path), cfg.Storage.DBPath)
+	}
+
 	return &cfg, nil
 }
