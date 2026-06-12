@@ -6,35 +6,35 @@ import (
 )
 
 type Metrics struct {
-	mu        sync.RWMutex
-	data      map[string]any
-	timestamp time.Time
+	Mu        sync.RWMutex    `json:"mu"`
+	Data      map[string]any  `json:"data"`
+	Timestamp time.Time       `json:"timestamp"`
 }
 
 func NewMetrics(name string) *Metrics {
 	return &Metrics{
-		data:      make(map[string]any),
-		timestamp: time.Now(),
+		Data:      make(map[string]any),
+		Timestamp: time.Now(),
 	}
 }
 
 func (m *Metrics) Set(key string, value any) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.data[key] = value
+	m.Mu.Lock()
+	defer m.Mu.Unlock()
+	m.Data[key] = value
 }
 
 func (m *Metrics) Get(key string) any {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
-	return m.data[key]
+	m.Mu.RLock()
+	defer m.Mu.RUnlock()
+	return m.Data[key]
 }
 
 func (m *Metrics) GetAll() map[string]any {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+	m.Mu.RLock()
+	defer m.Mu.RUnlock()
 	copy := make(map[string]any)
-	for k, v := range m.data {
+	for k, v := range m.Data {
 		copy[k] = v
 	}
 	return copy

@@ -1,6 +1,8 @@
 package entity
 
 import (
+	"fmt"
+
 	"moon/pkg/types"
 	"time"
 )
@@ -25,6 +27,16 @@ type CPU struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-func (c *CPU) Collect(machine *Machine) {
-
+func CheckCPUPeak(cpu *CPU, thresholdPct types.Percent) error {
+	if thresholdPct <= 0 {
+		return nil
+	}
+	usagePct := types.Percent(100 - cpu.Average.Idle)
+	if usagePct > thresholdPct {
+		return fmt.Errorf(
+			"cpu peak: usage %.1f%% exceeds threshold %.1f%%",
+			usagePct, thresholdPct,
+		)
+	}
+	return nil
 }
