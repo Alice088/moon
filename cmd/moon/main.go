@@ -1,16 +1,23 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
 
+	"moon/internal/config"
 	"moon/internal/daemon"
 )
+
+var version = "dev"
 
 func requireRoot() {
 	if os.Geteuid() != 0 {
@@ -53,6 +60,10 @@ func main() {
 		cmdStatus()
 	case "uninstall":
 		cmdUninstall()
+	case "update":
+		cmdUpdate()
+	case "version":
+		fmt.Println("moon", version)
 	default:
 		printUsage()
 		os.Exit(1)
@@ -68,7 +79,9 @@ Commands:
   enable    install systemd service (autostart on boot)
   disable   remove systemd service
   status    show daemon status
-  uninstall remove all files (binary, config, service)`)
+  uninstall remove all files (binary, config, service)
+  update    update to latest version
+  version   print version`)
 }
 
 func cmdStart() {
@@ -165,6 +178,151 @@ func cmdStatus() {
 	} else {
 		fmt.Println("autostart: disabled")
 	}
+}
+
+func cmdUpdate() {
+	requireRoot()
+
+	wasRunning := pidRunning()
+	if wasRunning {
+		cmdStop()
+	}
+
+	cfg, err := config.Load(effectiveCfgPath())
+	if err != nil {
+		log.Fatalf("load config: %v", err)
+	}
+
+	repo := cfg.UpdateRepo
+	if repo == "" {
+		repo = "m42e/moon"
+	}
+
+	fmt.Printf("current version: %s\n", version)
+	fmt.Printf("checking %s...\n", repo)
+
+	release, err := fetchLatestRelease(repo)
+	if err != nil {
+		log.Fatalf("fetch release: %v", err)
+	}
+
+	newVer := strings.TrimPrefix(release.TagName, "v")
+	curVer := strings.TrimPrefix(version, "v")
+
+	if newVer == curVer || version == "dev" {
+		fmt.Println("already up to date")
+		if wasRunning {
+			cmdStart()
+		}
+		return
+	}
+
+	fmt.Printf("new version: %s\n", release.TagName)
+
+	downloadURL := ""
+	for _, a := range release.Assets {
+		if strings.Contains(a.Name, "linux-amd64") && strings.HasSuffix(a.Name, ".tar.gz") {
+			downloadURL = a.BrowserDownloadURL
+			break
+		}
+	}
+	if downloadURL == "" {
+		log.Fatalf("no linux-amd64 tarball found in release")
+	}
+
+	tmpDir, err := os.MkdirTemp("", "moon-update")
+	if err != nil {
+		log.Fatalf("create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	tarball := filepath.Join(tmpDir, "release.tar.gz")
+	fmt.Print("downloading... ")
+	if err := downloadFile(downloadURL, tarball); err != nil {
+		log.Fatalf("download: %v", err)
+	}
+	fmt.Println("done")
+
+	fmt.Print("extracting... ")
+	if err := exec.Command("tar", "xzf", tarball, "-C", tmpDir).Run(); err != nil {
+		log.Fatalf("extract: %v", err)
+	}
+	fmt.Println("done")
+
+	newBin := filepath.Join(tmpDir, "moon", "moon")
+	if _, err := os.Stat(newBin); err != nil {
+		log.Fatalf("binary not found in archive")
+	}
+
+	fmt.Print("installing... ")
+	data, err := os.ReadFile(newBin)
+	if err != nil {
+		log.Fatalf("read new binary: %v", err)
+	}
+	if err := os.WriteFile(binPath, data, 0755); err != nil {
+		log.Fatalf("write binary: %v", err)
+	}
+	fmt.Println("done")
+
+	fmt.Println("update complete")
+
+	if wasRunning {
+		cmdStart()
+	}
+}
+
+type ghRelease struct {
+	TagName string    `json:"tag_name"`
+	Assets  []ghAsset `json:"assets"`
+}
+
+type ghAsset struct {
+	Name               string `json:"name"`
+	BrowserDownloadURL string `json:"browser_download_url"`
+}
+
+func fetchLatestRelease(repo string) (*ghRelease, error) {
+	url := fmt.Sprintf("https://api.github.com/repos/%s/releases/latest", repo)
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("request: %w", err)
+	}
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("http: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("api returned %d: %s", resp.StatusCode, string(body))
+	}
+
+	var rel ghRelease
+	if err := json.NewDecoder(resp.Body).Decode(&rel); err != nil {
+		return nil, fmt.Errorf("decode: %w", err)
+	}
+	return &rel, nil
+}
+
+func downloadFile(url, dst string) error {
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	f, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = io.Copy(f, resp.Body)
+	return err
 }
 
 func cmdUninstall() {

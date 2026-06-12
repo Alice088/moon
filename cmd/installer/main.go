@@ -65,7 +65,7 @@ func main() {
 
 	fmt.Println()
 	fmt.Println("install complete")
-	fmt.Println("usage: moon start | stop | enable | disable | status | uninstall")
+	fmt.Println("usage: moon start | stop | enable | disable | status | update | version | uninstall")
 }
 
 func displayArt(dir string) {

@@ -28,9 +28,13 @@ Installer copies the binary to `/usr/local/bin`, creates config in `/root/.moon/
 ```bash
 moon enable    # install and enable systemd service
 moon start     # start the daemon
-moon status    # check if running
 moon stop      # stop the daemon
+moon status    # check if running
+moon enable    # install systemd service
 moon disable   # remove systemd service
+moon update    # update to latest version
+moon version   # print version
+moon uninstall # remove all files
 ```
 
 ## Configuration
@@ -49,6 +53,8 @@ disk:
 
 analyzer_workers: 2
 hook_workers: 2
+collect_interval: 1s
+update_repo: "m42e/moon"
 
 storage:
   db_path: "/root/.moon/moon.db"

@@ -18,6 +18,7 @@ type Config struct {
 	CollectInterval  string         `yaml:"collect_interval"`
 	Notify           []NotifyConfig `yaml:"notify"`
 	Storage          StorageConfig  `yaml:"storage"`
+	UpdateRepo       string         `yaml:"update_repo"`
 }
 
 type StorageConfig struct {
