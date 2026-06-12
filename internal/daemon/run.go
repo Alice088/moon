@@ -18,6 +18,36 @@ import (
 	"moon/internal/notifier"
 )
 
+func fanout(ctx context.Context, input <-chan *entity.Metrics) (<-chan *entity.Metrics, <-chan *entity.Metrics) {
+	a := make(chan *entity.Metrics, 100)
+	b := make(chan *entity.Metrics, 100)
+	go func() {
+		defer close(a)
+		defer close(b)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case m, ok := <-input:
+				if !ok {
+					return
+				}
+				select {
+				case a <- m:
+				case <-ctx.Done():
+					return
+				}
+				select {
+				case b <- m:
+				case <-ctx.Done():
+					return
+				}
+			}
+		}
+	}()
+	return a, b
+}
+
 func Run(cfgPath string) error {
 	cfg, err := config.Load(cfgPath)
 	if err != nil {
@@ -77,10 +107,12 @@ func Run(cfgPath string) error {
 	anaPool := entity.NewAnalyzerPool(analyzers, cfg.AnalyzerWorkers)
 	anaErrs, processed := anaPool.Run(ctx, pipOut)
 
-	hookRunner := hook.NewRunner(hks, cfg.HookWorkers)
-	hookErrs := hookRunner.Run(ctx, processed)
+	hookCh, dispCh := fanout(ctx, processed)
 
-	dispErrs := dispatcher.Run(ctx, processed, notifiers)
+	hookRunner := hook.NewRunner(hks, cfg.HookWorkers)
+	hookErrs := hookRunner.Run(ctx, hookCh)
+
+	dispErrs := dispatcher.Run(ctx, dispCh, notifiers)
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
