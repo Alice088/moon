@@ -2,3 +2,7 @@ cpu:
   peak_threshold_pct: 80.0
 
 analyzer_workers: 2
+
+notify:
+  - type: telegram
+    bot_token: "123456:ABC-DEF"

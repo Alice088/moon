@@ -10,12 +10,24 @@ import (
 )
 
 type Config struct {
-	CPU             CPUConfig `yaml:"cpu"`
-	AnalyzerWorkers int       `yaml:"analyzer_workers"`
+	CPU             CPUConfig      `yaml:"cpu"`
+	AnalyzerWorkers int            `yaml:"analyzer_workers"`
+	Notify          []NotifyConfig `yaml:"notify"`
 }
 
 type CPUConfig struct {
 	PeakThresholdPct types.Percent `yaml:"peak_threshold_pct"`
+}
+
+type NotifyConfig struct {
+	Type      string `yaml:"type"`
+	BotToken  string `yaml:"bot_token"`
+	SmtpHost  string `yaml:"smtp_host"`
+	SmtpPort  int    `yaml:"smtp_port"`
+	SmtpUser  string `yaml:"smtp_user"`
+	SmtpPass  string `yaml:"smtp_pass"`
+	FromAddr  string `yaml:"from_addr"`
+	ToAddr    string `yaml:"to_addr"`
 }
 
 func Load(path string) (*Config, error) {
