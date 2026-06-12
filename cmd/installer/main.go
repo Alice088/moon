@@ -160,6 +160,8 @@ Description=Moon Monitoring Daemon
 After=network.target
 
 [Service]
+Type=forking
+PIDFile=/var/run/moon.pid
 ExecStart=%s start
 Restart=always
 RestartSec=5

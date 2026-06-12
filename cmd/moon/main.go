@@ -91,8 +91,41 @@ func cmdStart() {
 		os.Exit(1)
 	}
 
+	if os.Getenv("_MOON_FG") == "" {
+		daemonize()
+		return
+	}
+
+	writePID()
+	defer os.Remove(pidFile)
+
 	if err := daemon.Run(effectiveCfgPath()); err != nil {
 		log.Fatalf("daemon error: %v", err)
+	}
+}
+
+func daemonize() {
+	exe, err := os.Executable()
+	if err != nil {
+		log.Fatalf("executable path: %v", err)
+	}
+
+	attr := &os.ProcAttr{
+		Files: []*os.File{nil, nil, nil},
+		Env:   append(os.Environ(), "_MOON_FG=1"),
+	}
+
+	proc, err := os.StartProcess(exe, []string{exe, "start"}, attr)
+	if err != nil {
+		log.Fatalf("fork: %v", err)
+	}
+	log.Printf("started (pid %d)", proc.Pid)
+	os.Exit(0)
+}
+
+func writePID() {
+	if err := os.WriteFile(pidFile, []byte(strconv.Itoa(os.Getpid())+"\n"), 0644); err != nil {
+		log.Fatalf("write pid: %v", err)
 	}
 }
 
@@ -138,6 +171,8 @@ Description=Moon Monitoring Daemon
 After=network.target
 
 [Service]
+Type=forking
+PIDFile=%s
 ExecStart=%s start
 Restart=always
 RestartSec=5
@@ -145,7 +180,7 @@ Environment=MOON_CONFIG=%s
 
 [Install]
 WantedBy=multi-user.target
-`, exe, cfgPath)
+`, pidFile, exe, cfgPath)
 
 	if err := os.WriteFile(svcFile, []byte(content), 0644); err != nil {
 		log.Fatalf("write service: %v", err)
@@ -195,7 +230,7 @@ func cmdUpdate() {
 
 	repo := cfg.UpdateRepo
 	if repo == "" {
-		repo = "m42e/moon"
+		repo = "Alice088/moon"
 	}
 
 	fmt.Printf("current version: %s\n", version)

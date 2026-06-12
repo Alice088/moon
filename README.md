@@ -54,7 +54,7 @@ disk:
 analyzer_workers: 2
 hook_workers: 2
 collect_interval: 1s
-update_repo: "m42e/moon"
+update_repo: "Alice088/moon"
 
 storage:
   db_path: "/root/.moon/moon.db"
