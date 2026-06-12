@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"moon/internal/analyzer"
+	"moon/internal/bot"
 	"moon/internal/collector"
 	"moon/internal/config"
 	"moon/internal/dispatcher"
@@ -44,12 +45,30 @@ func Run(cfgPath string) error {
 
 	notifiers := notifier.NewNotifiers(cfg.Notify)
 
-	hks := []hook.Hook{
-		hook.WriteAlertToDB(cfg.Storage.DBPath),
+	var botToken string
+	var chatIDs []string
+	for _, n := range cfg.Notify {
+		if n.Type == "telegram" {
+			if n.BotToken != "" && botToken == "" {
+				botToken = n.BotToken
+			}
+			if n.ChatID != "" {
+				chatIDs = append(chatIDs, n.ChatID)
+			}
+		}
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+
+	if botToken != "" {
+		b := bot.New(botToken, cfg.Storage.DBPath, chatIDs...)
+		go b.Run(ctx)
+	}
+
+	hks := []hook.Hook{
+		hook.WriteAlertToDB(cfg.Storage.DBPath),
+	}
 
 	pip := entity.NewPipeline(collectors)
 	pip.Interval = interval
