@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"os/user"
 	"strconv"
 	"strings"
 	"syscall"
@@ -20,23 +19,16 @@ func requireRoot() {
 }
 
 const (
-	pidFile = "/var/run/moon.pid"
-	svcFile = "/etc/systemd/system/moon.service"
+	pidFile   = "/var/run/moon.pid"
+	svcFile   = "/etc/systemd/system/moon.service"
+	cfgPath   = "/root/.moon/config.yaml"
 )
 
-func homeDir() string {
-	u, err := user.Current()
-	if err != nil {
-		return "/root"
-	}
-	return u.HomeDir
-}
-
-func defaultCfgPath() string {
+func effectiveCfgPath() string {
 	if v := os.Getenv("MOON_CONFIG"); v != "" {
 		return v
 	}
-	return homeDir() + "/.moon/config.yaml"
+	return cfgPath
 }
 
 func main() {
@@ -80,7 +72,7 @@ func cmdStart() {
 		os.Exit(1)
 	}
 
-	if err := daemon.Run(defaultCfgPath()); err != nil {
+	if err := daemon.Run(effectiveCfgPath()); err != nil {
 		log.Fatalf("daemon error: %v", err)
 	}
 }
@@ -134,7 +126,7 @@ Environment=MOON_CONFIG=%s
 
 [Install]
 WantedBy=multi-user.target
-`, exe, homeDir()+"/.moon/config.yaml")
+`, exe, cfgPath)
 
 	if err := os.WriteFile(svcFile, []byte(content), 0644); err != nil {
 		log.Fatalf("write service: %v", err)
