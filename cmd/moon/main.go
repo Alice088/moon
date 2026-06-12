@@ -416,14 +416,9 @@ func cmdUninstall() {
 func cmdVersion() {
 	fmt.Printf("moon %s\n", version)
 
-	cfg, err := config.Load(effectiveCfgPath())
-	if err != nil {
-		return
-	}
-
-	repo := cfg.UpdateRepo
-	if repo == "" {
-		repo = "Alice088/moon"
+	repo := "Alice088/moon"
+	if cfg, err := config.Load(effectiveCfgPath()); err == nil && cfg.UpdateRepo != "" {
+		repo = cfg.UpdateRepo
 	}
 
 	release, err := fetchLatestRelease(repo)
