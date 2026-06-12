@@ -18,7 +18,7 @@ Download the latest release from GitHub and run:
 
 ```bash
 sudo tar xzf moon-*.tar.gz -C /tmp
-sudo /tmp/moon-installer
+sudo /tmp/moon/moon-installer
 ```
 
 Installer copies the binary to `/usr/local/bin`, creates config in `~/.moon/config.yaml`, installs systemd service, and deploys static assets.
