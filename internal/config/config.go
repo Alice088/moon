@@ -14,7 +14,13 @@ type Config struct {
 	RAM             RAMConfig      `yaml:"ram"`
 	Disk            DiskConfig     `yaml:"disk"`
 	AnalyzerWorkers int            `yaml:"analyzer_workers"`
+	HookWorkers     int            `yaml:"hook_workers"`
 	Notify          []NotifyConfig `yaml:"notify"`
+	Storage         StorageConfig  `yaml:"storage"`
+}
+
+type StorageConfig struct {
+	DBPath string `yaml:"db_path"`
 }
 
 type CPUConfig struct {

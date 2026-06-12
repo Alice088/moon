@@ -8,6 +8,10 @@ disk:
   peak_threshold_pct: 80.0
 
 analyzer_workers: 2
+hook_workers: 2
+
+storage:
+  db_path: "moon.db"
 
 notify:
   - type: telegram
