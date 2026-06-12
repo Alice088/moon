@@ -1,20 +1,25 @@
-run:
-	go run ./cmd/api
+VERSION ?= $(shell git describe --tags --always 2>/dev/null || echo "dev")
+BUILD_DIR := build
+LDFLAGS := -ldflags="-s -w"
 
-tidy:
-	go fmt ./... && echo "OK FMT" ; go vet ./... && echo "OK VET" 
+.PHONY: build dist clean
 
-test:
-	go test ./...
+build:
+	@mkdir -p $(BUILD_DIR)/moon-$(VERSION)
+	go build -trimpath $(LDFLAGS) -o $(BUILD_DIR)/moon-$(VERSION)/moon ./cmd/moon/
+	go build -trimpath $(LDFLAGS) -o $(BUILD_DIR)/moon-$(VERSION)/moon-installer ./cmd/installer/
+	strip $(BUILD_DIR)/moon-$(VERSION)/moon $(BUILD_DIR)/moon-$(VERSION)/moon-installer 2>/dev/null || true
+	cp config.example.yaml $(BUILD_DIR)/moon-$(VERSION)/
+	cp -r static $(BUILD_DIR)/moon-$(VERSION)/
+	@echo "binaries:"
+	@ls -lh $(BUILD_DIR)/moon-$(VERSION)/moon $(BUILD_DIR)/moon-$(VERSION)/moon-installer
 
-lint:
-	golangci-lint run
+dist: build
+	@mkdir -p $(BUILD_DIR)/release
+	tar czf $(BUILD_DIR)/release/moon-$(VERSION)-linux-amd64.tar.gz \
+		-C $(BUILD_DIR) moon-$(VERSION)
+	@echo "release:"
+	@ls -lh $(BUILD_DIR)/release/
 
-swagger:
-	swag init -g cmd/api/main.go
-
-migrate-up:
-	migrate -path migrations -database $(DB_URL) up
-
-migrate-down:
-	migrate -path migrations -database $(DB_URL) down
+clean:
+	rm -rf $(BUILD_DIR)
