@@ -24,5 +24,3 @@ type CPU struct {
 	Load15    float64   `json:"load15"`
 	Timestamp time.Time `json:"timestamp"`
 }
-
-

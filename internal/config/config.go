@@ -36,14 +36,14 @@ type DiskConfig struct {
 }
 
 type NotifyConfig struct {
-	Type      string `yaml:"type"`
-	BotToken  string `yaml:"bot_token"`
-	SmtpHost  string `yaml:"smtp_host"`
-	SmtpPort  int    `yaml:"smtp_port"`
-	SmtpUser  string `yaml:"smtp_user"`
-	SmtpPass  string `yaml:"smtp_pass"`
-	FromAddr  string `yaml:"from_addr"`
-	ToAddr    string `yaml:"to_addr"`
+	Type     string `yaml:"type"`
+	BotToken string `yaml:"bot_token"`
+	SmtpHost string `yaml:"smtp_host"`
+	SmtpPort int    `yaml:"smtp_port"`
+	SmtpUser string `yaml:"smtp_user"`
+	SmtpPass string `yaml:"smtp_pass"`
+	FromAddr string `yaml:"from_addr"`
+	ToAddr   string `yaml:"to_addr"`
 }
 
 func Load(path string) (*Config, error) {

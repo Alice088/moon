@@ -6,9 +6,9 @@ import (
 )
 
 type Metrics struct {
-	Mu        sync.RWMutex    `json:"mu"`
-	Data      map[string]any  `json:"data"`
-	Timestamp time.Time       `json:"timestamp"`
+	Mu        sync.RWMutex   `json:"mu"`
+	Data      map[string]any `json:"data"`
+	Timestamp time.Time      `json:"timestamp"`
 }
 
 func NewMetrics(name string) *Metrics {
