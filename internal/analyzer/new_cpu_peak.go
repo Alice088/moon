@@ -2,7 +2,6 @@ package analyzer
 
 import (
 	"context"
-	"fmt"
 
 	"moon/internal/entity"
 	"moon/pkg/types"
@@ -19,10 +18,14 @@ func NewCPUPeak(thresholdPct types.Percent) entity.Analyzer {
 		}
 		usagePct := types.Percent(100 - cpu.Average.Idle)
 		if usagePct > thresholdPct {
-			return fmt.Errorf(
-				"cpu peak: usage %.1f%% exceeds threshold %.1f%%",
-				usagePct, thresholdPct,
-			)
+			m.Set("alert", entity.Alert{
+				Type:    "cpu_peak",
+				Message: "cpu usage exceeds threshold",
+				Data: map[string]any{
+					"usage":     usagePct,
+					"threshold": thresholdPct,
+				},
+			})
 		}
 		return nil
 	}

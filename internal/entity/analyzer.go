@@ -19,8 +19,9 @@ func NewAnalyzerPool(analyzers []Analyzer, workers int) *AnalyzerPool {
 	}
 }
 
-func (p *AnalyzerPool) Run(ctx context.Context, input <-chan *Metrics) <-chan error {
+func (p *AnalyzerPool) Run(ctx context.Context, input <-chan *Metrics) (<-chan error, <-chan *Metrics) {
 	errs := make(chan error, 100)
+	processed := make(chan *Metrics, 100)
 	var wg sync.WaitGroup
 
 	for i := 0; i < p.workers; i++ {
@@ -36,11 +37,11 @@ func (p *AnalyzerPool) Run(ctx context.Context, input <-chan *Metrics) <-chan er
 						return
 					}
 					snapshot := m.GetAll()
+					copy := NewMetrics("analyzer")
+					for k, v := range snapshot {
+						copy.Set(k, v)
+					}
 					for _, a := range p.analyzers {
-						copy := NewMetrics("analyzer")
-						for k, v := range snapshot {
-							copy.Set(k, v)
-						}
 						if err := a(ctx, copy); err != nil {
 							select {
 							case errs <- err:
@@ -48,6 +49,11 @@ func (p *AnalyzerPool) Run(ctx context.Context, input <-chan *Metrics) <-chan er
 								return
 							}
 						}
+					}
+					select {
+					case processed <- copy:
+					case <-ctx.Done():
+						return
 					}
 				}
 			}
@@ -57,7 +63,8 @@ func (p *AnalyzerPool) Run(ctx context.Context, input <-chan *Metrics) <-chan er
 	go func() {
 		wg.Wait()
 		close(errs)
+		close(processed)
 	}()
 
-	return errs
+	return errs, processed
 }
