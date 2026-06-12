@@ -5,13 +5,13 @@ import (
 	"moon/internal/entity"
 )
 
-func Run(machine *entity.Machine, monitor []core.CollectFunc) {
+func Run(machine *entity.Machine, collectors []core.Collector) {
 	errors := make(chan error)
 
-	for _, fn := range monitor {
+	for _, collector := range collectors {
 		go func() {
 			for {
-				if err := fn(machine); err != nil {
+				if err := collector(machine); err != nil {
 					errors <- err
 				}
 			}
