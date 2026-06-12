@@ -10,13 +10,14 @@ import (
 )
 
 type Config struct {
-	CPU             CPUConfig      `yaml:"cpu"`
-	RAM             RAMConfig      `yaml:"ram"`
-	Disk            DiskConfig     `yaml:"disk"`
-	AnalyzerWorkers int            `yaml:"analyzer_workers"`
-	HookWorkers     int            `yaml:"hook_workers"`
-	Notify          []NotifyConfig `yaml:"notify"`
-	Storage         StorageConfig  `yaml:"storage"`
+	CPU              CPUConfig      `yaml:"cpu"`
+	RAM              RAMConfig      `yaml:"ram"`
+	Disk             DiskConfig     `yaml:"disk"`
+	AnalyzerWorkers  int            `yaml:"analyzer_workers"`
+	HookWorkers      int            `yaml:"hook_workers"`
+	CollectInterval  string         `yaml:"collect_interval"`
+	Notify           []NotifyConfig `yaml:"notify"`
+	Storage          StorageConfig  `yaml:"storage"`
 }
 
 type StorageConfig struct {

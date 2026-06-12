@@ -23,6 +23,13 @@ func Run(cfgPath string) error {
 		return err
 	}
 
+	interval := time.Second
+	if cfg.CollectInterval != "" {
+		if d, err := time.ParseDuration(cfg.CollectInterval); err == nil {
+			interval = d
+		}
+	}
+
 	collectors := []entity.Collector{
 		collector.NewCPUCollector(),
 		collector.NewRAMCollector(),
@@ -45,6 +52,7 @@ func Run(cfgPath string) error {
 	defer cancel()
 
 	pip := entity.NewPipeline(collectors)
+	pip.Interval = interval
 	pipOut, pipErrs := pip.Run(ctx)
 
 	anaPool := entity.NewAnalyzerPool(analyzers, cfg.AnalyzerWorkers)

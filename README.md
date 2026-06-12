@@ -21,7 +21,7 @@ sudo tar xzf moon-*.tar.gz -C /tmp
 sudo /tmp/moon/moon-installer
 ```
 
-Installer copies the binary to `/usr/local/bin`, creates config in `~/.moon/config.yaml`, installs systemd service, and deploys static assets.
+Installer copies the binary to `/usr/local/bin`, creates config in `/root/.moon/config.yaml`, installs systemd service, and deploys static assets.
 
 ## Quick start
 
@@ -35,7 +35,7 @@ moon disable   # remove systemd service
 
 ## Configuration
 
-Config file: `~/.moon/config.yaml` (override with `MOON_CONFIG` env var).
+Config file: `/root/.moon/config.yaml` (override with `MOON_CONFIG` env var).
 
 ```yaml
 cpu:

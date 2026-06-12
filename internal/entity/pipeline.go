@@ -3,6 +3,7 @@ package entity
 import (
 	"context"
 	"sync"
+	"time"
 )
 
 type Collector func(ctx context.Context, metrics *Metrics) error
@@ -12,6 +13,7 @@ type Pipeline struct {
 	Output     chan *Metrics `json:"output"`
 	Errors     chan error    `json:"errors"`
 	Collectors []Collector   `json:"collectors"`
+	Interval   time.Duration `json:"interval"`
 }
 
 func NewPipeline(collectors []Collector) *Pipeline {
@@ -20,6 +22,7 @@ func NewPipeline(collectors []Collector) *Pipeline {
 		Output:     make(chan *Metrics, 100),
 		Errors:     make(chan error, 100),
 		Collectors: collectors,
+		Interval:   time.Second,
 	}
 }
 
@@ -47,6 +50,12 @@ func (p *Pipeline) Run(ctx context.Context) (<-chan *Metrics, <-chan error) {
 					case p.Output <- p.Input:
 					case <-ctx.Done():
 						return
+					}
+
+					select {
+					case <-ctx.Done():
+						return
+					case <-time.After(p.Interval):
 					}
 				}
 			}

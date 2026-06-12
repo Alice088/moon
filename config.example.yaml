@@ -9,6 +9,7 @@ disk:
 
 analyzer_workers: 2
 hook_workers: 2
+collect_interval: 1s
 
 storage:
   db_path: "moon.db"

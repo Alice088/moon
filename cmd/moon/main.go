@@ -19,9 +19,12 @@ func requireRoot() {
 }
 
 const (
-	pidFile   = "/var/run/moon.pid"
-	svcFile   = "/etc/systemd/system/moon.service"
-	cfgPath   = "/root/.moon/config.yaml"
+	pidFile    = "/var/run/moon.pid"
+	svcFile    = "/etc/systemd/system/moon.service"
+	cfgPath    = "/root/.moon/config.yaml"
+	binPath    = "/usr/local/bin/moon"
+	cfgDir     = "/root/.moon"
+	staticDir  = "/usr/share/moon/static"
 )
 
 func effectiveCfgPath() string {
@@ -48,6 +51,8 @@ func main() {
 		cmdDisable()
 	case "status":
 		cmdStatus()
+	case "uninstall":
+		cmdUninstall()
 	default:
 		printUsage()
 		os.Exit(1)
@@ -62,7 +67,8 @@ Commands:
   stop      stop monitoring
   enable    install systemd service (autostart on boot)
   disable   remove systemd service
-  status    show daemon status`)
+  status    show daemon status
+  uninstall remove all files (binary, config, service)`)
 }
 
 func cmdStart() {
@@ -159,6 +165,50 @@ func cmdStatus() {
 	} else {
 		fmt.Println("autostart: disabled")
 	}
+}
+
+func cmdUninstall() {
+	requireRoot()
+
+	fmt.Print("stopping daemon... ")
+	if pidRunning() {
+		cmdStop()
+	} else {
+		fmt.Println("not running")
+	}
+
+	fmt.Print("disabling service... ")
+	if _, err := os.Stat(svcFile); err == nil {
+		exec.Command("systemctl", "disable", "moon").Run()
+		os.Remove(svcFile)
+		exec.Command("systemctl", "daemon-reload").Run()
+		fmt.Println("done")
+	} else {
+		fmt.Println("not installed")
+	}
+
+	fmt.Print("removing binary... ")
+	if err := os.Remove(binPath); err != nil {
+		fmt.Println("not found")
+	} else {
+		fmt.Println("done")
+	}
+
+	fmt.Print("removing config... ")
+	if err := os.RemoveAll(cfgDir); err != nil {
+		fmt.Println("not found")
+	} else {
+		fmt.Println("done")
+	}
+
+	fmt.Print("removing static files... ")
+	if err := os.RemoveAll(staticDir); err != nil {
+		fmt.Println("not found")
+	} else {
+		fmt.Println("done")
+	}
+
+	fmt.Println("uninstall complete")
 }
 
 func pidRunning() bool {
