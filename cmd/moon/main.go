@@ -253,6 +253,9 @@ func cmdUpdate() {
 	}
 
 	fmt.Printf("new version: %s\n", release.TagName)
+	if release.Name != "" {
+		fmt.Printf("title: %s\n", release.Name)
+	}
 
 	downloadURL := ""
 	for _, a := range release.Assets {
@@ -309,6 +312,7 @@ func cmdUpdate() {
 
 type ghRelease struct {
 	TagName string    `json:"tag_name"`
+	Name    string    `json:"name"`
 	Assets  []ghAsset `json:"assets"`
 }
 

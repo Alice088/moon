@@ -2,7 +2,6 @@ package entity
 
 import (
 	"context"
-	"sync"
 	"time"
 )
 
@@ -27,45 +26,37 @@ func NewPipeline(collectors []Collector) *Pipeline {
 }
 
 func (p *Pipeline) Run(ctx context.Context) (<-chan *Metrics, <-chan error) {
-	var wg sync.WaitGroup
-
-	for _, c := range p.Collectors {
-		wg.Add(1)
-		go func(collector Collector) {
-			defer wg.Done()
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				default:
-					if err := collector(ctx, p.Input); err != nil {
+	go func() {
+		defer close(p.Output)
+		defer close(p.Errors)
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				for _, c := range p.Collectors {
+					if err := c(ctx, p.Input); err != nil {
 						select {
 						case p.Errors <- err:
 						case <-ctx.Done():
 							return
 						}
 					}
+				}
 
-					select {
-					case p.Output <- p.Input:
-					case <-ctx.Done():
-						return
-					}
+				select {
+				case p.Output <- p.Input:
+				case <-ctx.Done():
+					return
+				}
 
-					select {
-					case <-ctx.Done():
-						return
-					case <-time.After(p.Interval):
-					}
+				select {
+				case <-ctx.Done():
+					return
+				case <-time.After(p.Interval):
 				}
 			}
-		}(c)
-	}
-
-	go func() {
-		wg.Wait()
-		close(p.Output)
-		close(p.Errors)
+		}
 	}()
 
 	return p.Output, p.Errors
