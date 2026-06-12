@@ -10,7 +10,8 @@ import (
 )
 
 type Config struct {
-	CPU CPUConfig `yaml:"cpu"`
+	CPU             CPUConfig `yaml:"cpu"`
+	AnalyzerWorkers int       `yaml:"analyzer_workers"`
 }
 
 type CPUConfig struct {
