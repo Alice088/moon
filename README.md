@@ -26,11 +26,11 @@ Installer copies the binary to `/usr/local/bin`, creates config in `~/.moon/conf
 ## Quick start
 
 ```bash
-moon daemon enable    # install and enable systemd service
-moon daemon start     # start the daemon
-moon status           # check if running
-moon daemon stop      # stop the daemon
-moon daemon disable   # remove systemd service
+moon enable    # install and enable systemd service
+moon start     # start the daemon
+moon status    # check if running
+moon stop      # stop the daemon
+moon disable   # remove systemd service
 ```
 
 ## Configuration

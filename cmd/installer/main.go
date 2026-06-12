@@ -173,7 +173,7 @@ Description=Moon Monitoring Daemon
 After=network.target
 
 [Service]
-ExecStart=%s daemon start
+ExecStart=%s start
 Restart=always
 RestartSec=5
 Environment=MOON_CONFIG=%s/config.yaml

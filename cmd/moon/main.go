@@ -40,28 +40,16 @@ func main() {
 	}
 
 	switch os.Args[1] {
-	case "daemon":
-		if len(os.Args) < 3 {
-			printUsage()
-			os.Exit(1)
-		}
-		switch os.Args[2] {
-		case "start":
-			cmdDaemonStart()
-		case "stop":
-			cmdDaemonStop()
-		case "enable":
-			cmdDaemonEnable()
-		case "disable":
-			cmdDaemonDisable()
-		default:
-			printUsage()
-			os.Exit(1)
-		}
-
+	case "start":
+		cmdStart()
+	case "stop":
+		cmdStop()
+	case "enable":
+		cmdEnable()
+	case "disable":
+		cmdDisable()
 	case "status":
 		cmdStatus()
-
 	default:
 		printUsage()
 		os.Exit(1)
@@ -69,17 +57,17 @@ func main() {
 }
 
 func printUsage() {
-	fmt.Println(`moon — system monitoring daemon
+	fmt.Println(`moon -- system monitoring daemon
 
 Commands:
-  daemon start     start monitoring daemon
-  daemon stop      stop monitoring daemon
-  daemon enable    install systemd service (autostart on boot)
-  daemon disable   remove systemd service
-  status           show daemon status`)
+  start     start monitoring
+  stop      stop monitoring
+  enable    install systemd service (autostart on boot)
+  disable   remove systemd service
+  status    show daemon status`)
 }
 
-func cmdDaemonStart() {
+func cmdStart() {
 	if pidRunning() {
 		log.Println("already running")
 		os.Exit(1)
@@ -90,7 +78,7 @@ func cmdDaemonStart() {
 	}
 }
 
-func cmdDaemonStop() {
+func cmdStop() {
 	data, err := os.ReadFile(pidFile)
 	if err != nil {
 		log.Fatalf("not running (no pid file)")
@@ -114,7 +102,7 @@ func cmdDaemonStop() {
 	log.Println("stopped")
 }
 
-func cmdDaemonEnable() {
+func cmdEnable() {
 	if _, err := os.Stat(svcFile); err == nil {
 		log.Println("service already installed")
 		os.Exit(1)
@@ -130,7 +118,7 @@ Description=Moon Monitoring Daemon
 After=network.target
 
 [Service]
-ExecStart=%s daemon start
+ExecStart=%s start
 Restart=always
 RestartSec=5
 Environment=MOON_CONFIG=%s
@@ -149,7 +137,7 @@ WantedBy=multi-user.target
 	log.Println("service installed and enabled")
 }
 
-func cmdDaemonDisable() {
+func cmdDisable() {
 	exec.Command("systemctl", "disable", "moon").Run()
 	os.Remove(svcFile)
 	exec.Command("systemctl", "daemon-reload").Run()
