@@ -6,16 +6,24 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/user"
 	"runtime"
 )
 
 const (
-	binaryName   = "moon"
-	installDir   = "/usr/local/bin"
-	configDir    = "/etc/moon"
-	staticDir    = "/usr/share/moon/static"
-	artFile      = "moon.txt"
+	binaryName = "moon"
+	installDir = "/usr/local/bin"
+	staticDir  = "/usr/share/moon/static"
+	artFile    = "art.txt"
 )
+
+func homeDir() string {
+	u, err := user.Current()
+	if err != nil {
+		return "/root"
+	}
+	return u.HomeDir
+}
 
 func main() {
 	if runtime.GOOS != "linux" {
@@ -26,9 +34,11 @@ func main() {
 		log.Fatalf("run as root")
 	}
 
+	cfgDir := homeDir() + "/.moon"
+
 	displayArt()
 
-	installed := checkInstalled()
+	installed := checkInstalled(cfgDir)
 
 	if installed {
 		fmt.Println("moon already installed")
@@ -42,9 +52,9 @@ func main() {
 	}
 
 	installBinary()
-	installConfig()
+	installConfig(cfgDir)
 	installStatic()
-	installService()
+	installService(cfgDir)
 
 	fmt.Println()
 	fmt.Println("install complete")
@@ -67,11 +77,11 @@ func displayArt() {
 	}
 }
 
-func checkInstalled() bool {
+func checkInstalled(cfgDir string) bool {
 	if _, err := os.Stat(installDir + "/" + binaryName); err == nil {
 		return true
 	}
-	if _, err := os.Stat(configDir + "/config.yaml"); err == nil {
+	if _, err := os.Stat(cfgDir + "/config.yaml"); err == nil {
 		return true
 	}
 	return false
@@ -98,25 +108,27 @@ func installBinary() {
 	fmt.Println("done")
 }
 
-func installConfig() {
+func installConfig(cfgDir string) {
 	fmt.Print("installing config... ")
 
-	if err := os.MkdirAll(configDir, 0755); err != nil {
+	if err := os.MkdirAll(cfgDir, 0755); err != nil {
 		log.Fatalf("create config dir: %v", err)
 	}
 
 	src := "config.example.yaml"
 	if _, err := os.Stat(src); err != nil {
-		// embedded or copied alongside
+		src = ""
 	}
 
-	data, err := os.ReadFile(src)
-	if err != nil {
-		// minimal default
-		data = []byte("storage:\n  db_path: \"/var/lib/moon/moon.db\"\n")
+	var data []byte
+	if src != "" {
+		data, _ = os.ReadFile(src)
+	}
+	if len(data) == 0 {
+		data = []byte("storage:\n  db_path: \"" + cfgDir + "/moon.db\"\n")
 	}
 
-	dst := configDir + "/config.yaml"
+	dst := cfgDir + "/config.yaml"
 	if _, err := os.Stat(dst); err == nil {
 		fmt.Println("exists, skip")
 		return
@@ -141,12 +153,10 @@ func installStatic() {
 		return
 	}
 
-	data := []byte(`  __  __                   
- |  \/  | ___   _ __   ___ 
- | |\/| |/ _ \ | '_ \ / __|
- | |  | | (_) || | | |\__ \
- |_|  |_|\___/ |_| |_||___/
-`)
+	data, err := os.ReadFile("static/" + artFile)
+	if err != nil {
+		log.Fatalf("read art file: %v", err)
+	}
 
 	if err := os.WriteFile(staticDir+"/"+artFile, data, 0644); err != nil {
 		log.Fatalf("write art: %v", err)
@@ -155,7 +165,7 @@ func installStatic() {
 	fmt.Println("done")
 }
 
-func installService() {
+func installService(cfgDir string) {
 	fmt.Print("installing systemd service... ")
 
 	svc := fmt.Sprintf(`[Unit]
@@ -166,11 +176,11 @@ After=network.target
 ExecStart=%s daemon start
 Restart=always
 RestartSec=5
-Environment=MOON_CONFIG=/etc/moon/config.yaml
+Environment=MOON_CONFIG=%s/config.yaml
 
 [Install]
 WantedBy=multi-user.target
-`, installDir+"/"+binaryName)
+`, installDir+"/"+binaryName, cfgDir)
 
 	path := "/etc/systemd/system/moon.service"
 	if err := os.WriteFile(path, []byte(svc), 0644); err != nil {
@@ -182,4 +192,3 @@ WantedBy=multi-user.target
 
 	fmt.Println("done")
 }
-
