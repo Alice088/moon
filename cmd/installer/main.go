@@ -95,6 +95,7 @@ func installBinary(dir string) {
 	}
 
 	dst := installDir + "/" + binaryName
+	os.Remove(dst)
 	if err := os.WriteFile(dst, data, 0755); err != nil {
 		log.Fatalf("write binary: %v", err)
 	}

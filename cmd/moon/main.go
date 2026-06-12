@@ -294,6 +294,7 @@ func cmdUpdate() {
 	if err != nil {
 		log.Fatalf("read new binary: %v", err)
 	}
+	os.Remove(binPath)
 	if err := os.WriteFile(binPath, data, 0755); err != nil {
 		log.Fatalf("write binary: %v", err)
 	}
