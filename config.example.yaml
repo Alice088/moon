@@ -16,3 +16,4 @@ storage:
 notify:
   - type: telegram
     bot_token: "123456:ABC-DEF"
+    chat_id: "-1001234567890"

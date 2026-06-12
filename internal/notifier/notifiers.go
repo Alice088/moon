@@ -10,7 +10,7 @@ func NewNotifiers(cfgs []config.NotifyConfig) []entity.Notifier {
 	for _, c := range cfgs {
 		switch c.Type {
 		case "telegram":
-			notifiers = append(notifiers, NewTelegramSender(c.BotToken))
+			notifiers = append(notifiers, NewTelegramSender(c.BotToken, c.ChatID))
 		case "mail":
 			// TODO: NewMailSender(...)
 		}

@@ -38,6 +38,7 @@ type DiskConfig struct {
 type NotifyConfig struct {
 	Type     string `yaml:"type"`
 	BotToken string `yaml:"bot_token"`
+	ChatID   string `yaml:"chat_id"`
 	SmtpHost string `yaml:"smtp_host"`
 	SmtpPort int    `yaml:"smtp_port"`
 	SmtpUser string `yaml:"smtp_user"`
