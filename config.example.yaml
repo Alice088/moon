@@ -1,6 +1,12 @@
 cpu:
   peak_threshold_pct: 80.0
 
+ram:
+  peak_threshold_pct: 80.0
+
+disk:
+  peak_threshold_pct: 80.0
+
 analyzer_workers: 2
 
 notify:

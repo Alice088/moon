@@ -11,11 +11,21 @@ import (
 
 type Config struct {
 	CPU             CPUConfig      `yaml:"cpu"`
+	RAM             RAMConfig      `yaml:"ram"`
+	Disk            DiskConfig     `yaml:"disk"`
 	AnalyzerWorkers int            `yaml:"analyzer_workers"`
 	Notify          []NotifyConfig `yaml:"notify"`
 }
 
 type CPUConfig struct {
+	PeakThresholdPct types.Percent `yaml:"peak_threshold_pct"`
+}
+
+type RAMConfig struct {
+	PeakThresholdPct types.Percent `yaml:"peak_threshold_pct"`
+}
+
+type DiskConfig struct {
 	PeakThresholdPct types.Percent `yaml:"peak_threshold_pct"`
 }
 
