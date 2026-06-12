@@ -23,10 +23,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"go-template/internal/config"
-	"go-template/internal/database"
-	"go-template/internal/handler"
-	"go-template/pkg/logger"
+	"moon/internal/config"
+	"moon/internal/database"
+	"moon/internal/handler"
+	"moon/pkg/logger"
 	"net/http"
 	"os"
 	"os/signal"
@@ -36,7 +36,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog/log"
 
-	v1 "go-template/internal/router/v1"
+	v1 "moon/internal/router/v1"
 )
 
 const version = "0.1.0"

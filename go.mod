@@ -1,4 +1,4 @@
-module go-template
+module moon
 
 go 1.26.3
 

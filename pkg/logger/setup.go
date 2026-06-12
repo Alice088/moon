@@ -2,7 +2,7 @@
 package logger
 
 import (
-	"go-template/internal/config"
+	"moon/internal/config"
 	"os"
 
 	"github.com/rs/zerolog"
