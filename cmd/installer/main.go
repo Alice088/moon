@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"os/exec"
 	"os/user"
+	"path/filepath"
 	"runtime"
 )
 
@@ -25,21 +25,28 @@ func homeDir() string {
 	return u.HomeDir
 }
 
+func selfDir() string {
+	exe, err := os.Executable()
+	if err != nil {
+		return "."
+	}
+	return filepath.Dir(exe)
+}
+
 func main() {
 	if runtime.GOOS != "linux" {
 		log.Fatalf("only linux supported")
 	}
-
 	if os.Geteuid() != 0 {
 		log.Fatalf("run as root")
 	}
 
+	dir := selfDir()
 	cfgDir := homeDir() + "/.moon"
 
-	displayArt()
+	displayArt(dir)
 
 	installed := checkInstalled(cfgDir)
-
 	if installed {
 		fmt.Println("moon already installed")
 		fmt.Println("reinstall? [y/N]")
@@ -51,29 +58,22 @@ func main() {
 		}
 	}
 
-	installBinary()
-	installConfig(cfgDir)
-	installStatic()
+	installBinary(dir)
+	installConfig(dir, cfgDir)
+	installStatic(dir)
 	installService(cfgDir)
 
 	fmt.Println()
 	fmt.Println("install complete")
-	fmt.Println("usage: moon daemon start")
-	fmt.Println("       moon daemon enable")
+	fmt.Println("usage: moon start")
+	fmt.Println("       moon enable")
 	fmt.Println("       moon status")
 }
 
-func displayArt() {
-	data, err := os.ReadFile(artFile)
+func displayArt(dir string) {
+	data, err := os.ReadFile(dir + "/static/" + artFile)
 	if err == nil {
 		fmt.Println(string(data))
-	}
-
-	f, err := os.Open(staticDir + "/" + artFile)
-	if err == nil {
-		io.Copy(os.Stdout, f)
-		f.Close()
-		fmt.Println()
 	}
 }
 
@@ -87,17 +87,13 @@ func checkInstalled(cfgDir string) bool {
 	return false
 }
 
-func installBinary() {
+func installBinary(dir string) {
 	fmt.Print("installing binary... ")
 
-	src, err := os.Executable()
-	if err != nil {
-		log.Fatalf("executable path: %v", err)
-	}
-
+	src := dir + "/" + binaryName
 	data, err := os.ReadFile(src)
 	if err != nil {
-		log.Fatalf("read self: %v", err)
+		log.Fatalf("read moon binary: %v", err)
 	}
 
 	dst := installDir + "/" + binaryName
@@ -108,23 +104,16 @@ func installBinary() {
 	fmt.Println("done")
 }
 
-func installConfig(cfgDir string) {
+func installConfig(dir, cfgDir string) {
 	fmt.Print("installing config... ")
 
 	if err := os.MkdirAll(cfgDir, 0755); err != nil {
 		log.Fatalf("create config dir: %v", err)
 	}
 
-	src := "config.example.yaml"
-	if _, err := os.Stat(src); err != nil {
-		src = ""
-	}
-
-	var data []byte
-	if src != "" {
-		data, _ = os.ReadFile(src)
-	}
-	if len(data) == 0 {
+	src := dir + "/config.example.yaml"
+	data, err := os.ReadFile(src)
+	if err != nil {
 		data = []byte("storage:\n  db_path: \"" + cfgDir + "/moon.db\"\n")
 	}
 
@@ -141,7 +130,7 @@ func installConfig(cfgDir string) {
 	fmt.Println("done")
 }
 
-func installStatic() {
+func installStatic(dir string) {
 	fmt.Print("installing static files... ")
 
 	if err := os.MkdirAll(staticDir, 0755); err != nil {
@@ -153,9 +142,9 @@ func installStatic() {
 		return
 	}
 
-	data, err := os.ReadFile("static/" + artFile)
+	data, err := os.ReadFile(dir + "/static/" + artFile)
 	if err != nil {
-		log.Fatalf("read art file: %v", err)
+		log.Fatalf("read art: %v", err)
 	}
 
 	if err := os.WriteFile(staticDir+"/"+artFile, data, 0644); err != nil {

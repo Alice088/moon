@@ -13,6 +13,12 @@ import (
 	"moon/internal/daemon"
 )
 
+func requireRoot() {
+	if os.Geteuid() != 0 {
+		log.Fatalf("must run as root")
+	}
+}
+
 const (
 	pidFile = "/var/run/moon.pid"
 	svcFile = "/etc/systemd/system/moon.service"
@@ -68,6 +74,7 @@ Commands:
 }
 
 func cmdStart() {
+	requireRoot()
 	if pidRunning() {
 		log.Println("already running")
 		os.Exit(1)
@@ -79,6 +86,7 @@ func cmdStart() {
 }
 
 func cmdStop() {
+	requireRoot()
 	data, err := os.ReadFile(pidFile)
 	if err != nil {
 		log.Fatalf("not running (no pid file)")
@@ -103,6 +111,7 @@ func cmdStop() {
 }
 
 func cmdEnable() {
+	requireRoot()
 	if _, err := os.Stat(svcFile); err == nil {
 		log.Println("service already installed")
 		os.Exit(1)
@@ -138,6 +147,7 @@ WantedBy=multi-user.target
 }
 
 func cmdDisable() {
+	requireRoot()
 	exec.Command("systemctl", "disable", "moon").Run()
 	os.Remove(svcFile)
 	exec.Command("systemctl", "daemon-reload").Run()
