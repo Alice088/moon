@@ -7,7 +7,6 @@ build:
 	@mkdir -p $(BUILD_DIR)/moon
 	go build -trimpath -ldflags="-w -X main.version=$(VERSION)" -o $(BUILD_DIR)/moon/moon ./cmd/moon/
 	cp config.example.yaml $(BUILD_DIR)/moon/
-	cp -r static $(BUILD_DIR)/moon/
 	@echo "binary:"
 	@ls -lh $(BUILD_DIR)/moon/moon
 
