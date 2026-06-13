@@ -44,7 +44,9 @@ func main() {
 	dir := selfDir()
 	cfgDir := homeDir() + "/.moon"
 
+	fmt.Println()
 	displayArt(dir)
+	fmt.Println()
 
 	installed := checkInstalled(cfgDir)
 	if installed {
