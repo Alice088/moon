@@ -11,11 +11,18 @@ import (
 	"path/filepath"
 	"strings"
 
+	_ "embed"
 	"moon/internal/config"
 	"moon/internal/daemon"
 )
 
 var version = "dev"
+
+//go:embed art.txt
+var logo string
+
+//go:embed config.example.yaml
+var defaultConfig []byte
 
 func homeDir() string {
 	return os.Getenv("HOME")
@@ -141,6 +148,8 @@ func cmdStatus() {
 }
 
 func cmdInstall() {
+	fmt.Printf("\n %s \n", logo)
+
 	exe, err := os.Executable()
 	if err != nil {
 		log.Fatalf("executable path: %v", err)
@@ -179,20 +188,11 @@ func cmdInstall() {
 
 	cfgDst := filepath.Join(cfgDir, "config.yaml")
 	if _, err := os.Stat(cfgDst); os.IsNotExist(err) {
-		// try config.example.yaml next to the running binary
-		srcCfg := filepath.Join(filepath.Dir(exe), "config.example.yaml")
-		cfgContent, readErr := os.ReadFile(srcCfg)
-		if readErr != nil {
-			cfgContent = []byte(fmt.Sprintf("storage:\n  db_path: %q\n", dbDefaultPath()))
-		} else {
-			// rewrite db_path from /root/... to user path
-			cfgContent = []byte(strings.ReplaceAll(
-				string(cfgContent),
-				`db_path: "/root/.moon/moon.db"`,
-				fmt.Sprintf(`db_path: %q`, dbDefaultPath()),
-			))
-		}
-		if err := os.WriteFile(cfgDst, cfgContent, 0644); err != nil {
+		// start from embedded default config
+		cfgContent := string(defaultConfig)
+		// replace tilde home placeholder with actual home directory
+		cfgContent = strings.ReplaceAll(cfgContent, "~/.local/share/moon", xdgDataDir()+"/moon")
+		if err := os.WriteFile(cfgDst, []byte(cfgContent), 0644); err != nil {
 			log.Fatalf("write config: %v", err)
 		}
 		fmt.Println("config:", cfgDst)

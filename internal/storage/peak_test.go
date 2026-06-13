@@ -40,7 +40,8 @@ func seedTestDB(t *testing.T) string {
 		t.Fatal(err)
 	}
 
-	now := time.Now()
+	// Use UTC to match production: SQLite CURRENT_TIMESTAMP stores UTC.
+	now := time.Now().UTC()
 	for _, row := range []struct {
 		typ, msg, data, ts string
 	}{

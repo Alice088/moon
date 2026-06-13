@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 
@@ -20,6 +21,7 @@ type Config struct {
 	Notify           []NotifyConfig `yaml:"notify"`
 	Storage          StorageConfig  `yaml:"storage"`
 	UpdateRepo       string         `yaml:"update_repo"`
+	Debug            bool           `yaml:"debug"`
 }
 
 type StorageConfig struct {
@@ -63,9 +65,17 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("decode config: %w", err)
 	}
 
-	if !filepath.IsAbs(cfg.Storage.DBPath) {
-		cfg.Storage.DBPath = filepath.Join(filepath.Dir(path), cfg.Storage.DBPath)
+	// expand ~ in db_path
+	dbPath := cfg.Storage.DBPath
+	if strings.HasPrefix(dbPath, "~/") {
+		home, _ := os.UserHomeDir()
+		dbPath = filepath.Join(home, dbPath[2:])
 	}
+
+	if !filepath.IsAbs(dbPath) {
+		dbPath = filepath.Join(filepath.Dir(path), dbPath)
+	}
+	cfg.Storage.DBPath = dbPath
 
 	return &cfg, nil
 }

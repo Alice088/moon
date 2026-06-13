@@ -2,9 +2,11 @@ package daemon
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -13,6 +15,7 @@ import (
 	"moon/internal/collector"
 	"moon/internal/config"
 	"moon/internal/dispatcher"
+	"moon/internal/storage"
 	"moon/internal/entity"
 	"moon/internal/hook"
 	"moon/internal/notifier"
@@ -54,6 +57,17 @@ func Run(cfgPath string) error {
 		return err
 	}
 
+	// ensure database directory exists
+	dbDir := filepath.Dir(cfg.Storage.DBPath)
+	if err := os.MkdirAll(dbDir, 0755); err != nil {
+		return fmt.Errorf("create db dir %s: %w", dbDir, err)
+	}
+
+	if cfg.Debug {
+		storage.Debug = true
+		log.Println("[debug] debug mode enabled")
+	}
+
 	interval := time.Second
 	if cfg.CollectInterval != "" {
 		if d, err := time.ParseDuration(cfg.CollectInterval); err == nil {
@@ -93,6 +107,7 @@ func Run(cfgPath string) error {
 
 	if botToken != "" {
 		b := bot.New(botToken, cfg.Storage.DBPath, chatIDs...)
+		b.SetDebug(cfg.Debug)
 		go b.Run(ctx)
 	}
 

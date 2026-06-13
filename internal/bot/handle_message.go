@@ -3,6 +3,7 @@ package bot
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -45,6 +46,9 @@ func (b *Bot) handleMessage(ctx context.Context, msg tgMessage) {
 
 	d, err := parsePeriod(periodStr)
 	if err != nil {
+		if b.debug {
+			log.Printf("[debug] handleMessage: bad period %q: %v", periodStr, err)
+		}
 		b.postJSON(ctx, "sendMessage", map[string]string{
 			"chat_id":                  chatID,
 			"text":                     "invalid period. use: hour, day, week, month, or Go duration (1h, 24h, 7d)",
@@ -54,6 +58,11 @@ func (b *Bot) handleMessage(ctx context.Context, msg tgMessage) {
 	}
 
 	since := time.Now().Add(-d)
+
+	if b.debug {
+		log.Printf("[debug] handleMessage: cmd=%s period=%s since=%s since_utc=%s",
+			cmd, periodStr, since.Format("2006-01-02 15:04:05"), since.UTC().Format("2006-01-02 15:04:05"))
+	}
 
 	switch cmd {
 	case "/peaks":
@@ -71,18 +80,52 @@ func (b *Bot) handleMessage(ctx context.Context, msg tgMessage) {
 
 func (b *Bot) sendPeaks(ctx context.Context, chatID string, since time.Time) {
 	types := []string{"cpu", "ram", "disk"}
+	now := time.Now()
+	duration := now.Sub(since)
+
+	// choose time format based on total period length
+	showDate := duration >= 24*time.Hour
+
+	peakTimeFmt := "15:04"
+	if showDate {
+		peakTimeFmt = "Jan _2 15:04"
+	}
+
+	n := 3
 	var lines []string
-	lines = append(lines, fmt.Sprintf("Peaks since %s:", since.Format("2006-01-02 15:04")))
+	if showDate {
+		lines = append(lines, fmt.Sprintf("Peaks %s — %s:", since.Format("Jan _2"), now.Format("Jan _2")))
+	} else {
+		lines = append(lines, fmt.Sprintf("Peaks %s — %s:", since.Format("15:04"), now.Format("15:04")))
+	}
+
 	for _, t := range types {
-		p, err := storage.Peak(b.dbPath, t, since)
+		intervals, err := storage.PeakByIntervals(b.dbPath, t, since, n)
 		if err != nil {
-			p = 0
+			if b.debug {
+				log.Printf("[debug] sendPeaks %s: storage error: %v", t, err)
+			}
+			lines = append(lines, fmt.Sprintf("  %s: error", t))
+			continue
 		}
-		lines = append(lines, fmt.Sprintf("  %s: %.1f%%", t, p))
+
+		lines = append(lines, fmt.Sprintf("  %s:", t))
+		for _, iv := range intervals {
+			if iv.PeakAt == nil {
+				lines = append(lines, fmt.Sprintf("    no data"))
+			} else {
+				lines = append(lines, fmt.Sprintf("    %s: %.1f%%", iv.PeakAt.Local().Format(peakTimeFmt), iv.Value))
+			}
+		}
+	}
+
+	text := strings.Join(lines, "\n")
+	if b.debug {
+		log.Printf("[debug] sendPeaks text:\n%s", text)
 	}
 	b.postJSON(ctx, "sendMessage", map[string]string{
 		"chat_id":                  chatID,
-		"text":                     strings.Join(lines, "\n"),
+		"text":                     text,
 		"disable_web_page_preview": "true",
 	})
 }
@@ -94,9 +137,18 @@ func (b *Bot) sendPeakAvg(ctx context.Context, chatID string, since time.Time) {
 	for _, t := range types {
 		a, err := storage.Average(b.dbPath, t, since)
 		if err != nil {
+			if b.debug {
+				log.Printf("[debug] sendPeakAvg %s: storage error: %v", t, err)
+			}
 			a = 0
 		}
+		if b.debug {
+			log.Printf("[debug] sendPeakAvg %s: %.1f%%", t, a)
+		}
 		lines = append(lines, fmt.Sprintf("  %s: %.1f%%", t, a))
+	}
+	if b.debug {
+		log.Printf("[debug] sendPeakAvg text:\n%s", strings.Join(lines, "\n"))
 	}
 	b.postJSON(ctx, "sendMessage", map[string]string{
 		"chat_id":                  chatID,

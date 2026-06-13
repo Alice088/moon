@@ -10,6 +10,10 @@ import (
 )
 
 func (b *Bot) postJSON(ctx context.Context, method string, v any) error {
+	if b.postJSONFunc != nil {
+		return b.postJSONFunc(ctx, method, v)
+	}
+
 	data, err := json.Marshal(v)
 	if err != nil {
 		return fmt.Errorf("json: %w", err)
