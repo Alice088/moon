@@ -109,11 +109,13 @@ func (b *Bot) sendPeaks(ctx context.Context, chatID string, since time.Time) {
 			continue
 		}
 
-		lines = append(lines, fmt.Sprintf("  %s:", t))
+		hasData := false
 		for _, iv := range intervals {
-			if iv.PeakAt == nil {
-				lines = append(lines, fmt.Sprintf("    no data"))
-			} else {
+			if iv.PeakAt != nil {
+				if !hasData {
+					lines = append(lines, fmt.Sprintf("  %s:", t))
+					hasData = true
+				}
 				lines = append(lines, fmt.Sprintf("    %s: %.1f%%", iv.PeakAt.Local().Format(peakTimeFmt), iv.Value))
 			}
 		}
@@ -132,27 +134,53 @@ func (b *Bot) sendPeaks(ctx context.Context, chatID string, since time.Time) {
 
 func (b *Bot) sendPeakAvg(ctx context.Context, chatID string, since time.Time) {
 	types := []string{"cpu", "ram", "disk"}
+	now := time.Now()
+	duration := now.Sub(since)
+
+	showDate := duration >= 24*time.Hour
+	peakTimeFmt := "15:04"
+	if showDate {
+		peakTimeFmt = "Jan _2 15:04"
+	}
+
+	n := 3
 	var lines []string
-	lines = append(lines, fmt.Sprintf("Average peaks since %s:", since.Format("2006-01-02 15:04")))
+	if showDate {
+		lines = append(lines, fmt.Sprintf("Avg peaks %s — %s:", since.Format("Jan _2"), now.Format("Jan _2")))
+	} else {
+		lines = append(lines, fmt.Sprintf("Avg peaks %s — %s:", since.Format("15:04"), now.Format("15:04")))
+	}
+
 	for _, t := range types {
-		a, err := storage.Average(b.dbPath, t, since)
+		intervals, err := storage.AverageByIntervals(b.dbPath, t, since, n)
 		if err != nil {
 			if b.debug {
 				log.Printf("[debug] sendPeakAvg %s: storage error: %v", t, err)
 			}
-			a = 0
+			lines = append(lines, fmt.Sprintf("  %s: error", t))
+			continue
 		}
-		if b.debug {
-			log.Printf("[debug] sendPeakAvg %s: %.1f%%", t, a)
+
+		hasData := false
+		for _, iv := range intervals {
+			if iv.Value == 0 {
+				continue
+			}
+			if !hasData {
+				lines = append(lines, fmt.Sprintf("  %s:", t))
+				hasData = true
+			}
+			lines = append(lines, fmt.Sprintf("    %s: %.1f%%", iv.End.Format(peakTimeFmt), iv.Value))
 		}
-		lines = append(lines, fmt.Sprintf("  %s: %.1f%%", t, a))
 	}
+
+	text := strings.Join(lines, "\n")
 	if b.debug {
-		log.Printf("[debug] sendPeakAvg text:\n%s", strings.Join(lines, "\n"))
+		log.Printf("[debug] sendPeakAvg text:\n%s", text)
 	}
 	b.postJSON(ctx, "sendMessage", map[string]string{
 		"chat_id":                  chatID,
-		"text":                     strings.Join(lines, "\n"),
+		"text":                     text,
 		"disable_web_page_preview": "true",
 	})
 }

@@ -156,20 +156,19 @@ func TestSendPeakAvg(t *testing.T) {
 		t.Fatalf("expected method sendMessage, got %s", captured.method)
 	}
 
-	if !strings.Contains(captured.text, "Average peaks since") {
+	if !strings.Contains(captured.text, "Avg peaks") {
 		t.Fatalf("missing header in: %s", captured.text)
 	}
 
 	// cpu average: (85.0 + 92.3 + 88.7) / 3 = 88.666... → 88.7
-	expectedCPU := "cpu: 88.7%"
-	if !strings.Contains(captured.text, expectedCPU) {
-		t.Fatalf("expected %s, got:\n%s", expectedCPU, captured.text)
+	if !strings.Contains(captured.text, "88.7%") {
+		t.Fatalf("expected 88.7%%, got:\n%s", captured.text)
 	}
-	if !strings.Contains(captured.text, "ram: 76.0%") {
-		t.Fatalf("expected ram: 76.0%%, got:\n%s", captured.text)
+	if !strings.Contains(captured.text, "76.0%") {
+		t.Fatalf("expected 76.0%%, got:\n%s", captured.text)
 	}
-	if !strings.Contains(captured.text, "disk: 91.0%") {
-		t.Fatalf("expected disk: 91.0%%, got:\n%s", captured.text)
+	if !strings.Contains(captured.text, "91.0%") {
+		t.Fatalf("expected 91.0%%, got:\n%s", captured.text)
 	}
 }
 
@@ -188,12 +187,12 @@ func TestSendPeaksNoData(t *testing.T) {
 		postJSONFunc: mockPostJSON(t, &captured),
 	}
 
-	// Use a time in the future — no alerts match → all "no data"
+	// Use a time in the future — no alerts match → no metric lines
 	since := time.Now().Add(1 * time.Hour)
 	bot.sendPeaks(context.Background(), "123", since)
 
-	if !strings.Contains(captured.text, "no data") {
-		t.Fatalf("expected 'no data' for no data, got:\n%s", captured.text)
+	if strings.Contains(captured.text, "cpu:") || strings.Contains(captured.text, "ram:") || strings.Contains(captured.text, "disk:") {
+		t.Fatalf("expected no metric lines for no data, got:\n%s", captured.text)
 	}
 }
 
@@ -247,7 +246,7 @@ func TestSendPeakAvgNoData(t *testing.T) {
 	since := time.Now().Add(1 * time.Hour)
 	bot.sendPeakAvg(context.Background(), "123", since)
 
-	if !strings.Contains(captured.text, "cpu: 0.0%") {
-		t.Fatalf("expected 0.0%% for no data, got:\n%s", captured.text)
+	if strings.Contains(captured.text, "cpu:") || strings.Contains(captured.text, "ram:") || strings.Contains(captured.text, "disk:") {
+		t.Fatalf("expected no metric lines for no data, got:\n%s", captured.text)
 	}
 }
