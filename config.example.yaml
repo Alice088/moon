@@ -14,7 +14,7 @@ collect_interval: 1s
 update_repo: "Alice088/moon"
 
 storage:
-  db_path: "/root/.moon/moon.db"
+  db_path: "~/.local/share/moon/moon.db"
 
 notify:
   - type: telegram

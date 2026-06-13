@@ -6,12 +6,10 @@ BUILD_DIR := build
 build:
 	@mkdir -p $(BUILD_DIR)/moon
 	go build -trimpath -ldflags="-w -X main.version=$(VERSION)" -o $(BUILD_DIR)/moon/moon ./cmd/moon/
-	go build -trimpath -ldflags="-s -w" -o $(BUILD_DIR)/moon/moon-installer ./cmd/installer/
-	strip $(BUILD_DIR)/moon/moon-installer 2>/dev/null || true
 	cp config.example.yaml $(BUILD_DIR)/moon/
 	cp -r static $(BUILD_DIR)/moon/
-	@echo "binaries:"
-	@ls -lh $(BUILD_DIR)/moon/moon $(BUILD_DIR)/moon/moon-installer
+	@echo "binary:"
+	@ls -lh $(BUILD_DIR)/moon/moon
 
 dist: build
 	@mkdir -p $(BUILD_DIR)/release
